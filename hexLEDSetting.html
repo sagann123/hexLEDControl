@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>Hex LED Setting</title>
+    <style>
+        .ledMap {
+            float: left;
+            text-align: center;
+            margin: 0.5em;
+        }
+    
+        span.ledBox {
+            border: thin dotted;
+            display:inline-block;
+            height: 1em;
+            width: 1em;
+            margin-left: 0.2em;
+        }
+    
+        span.ledBox.fore {
+            border: thin solid;
+        }
+    
+        .rotated {
+            transform: rotate(90deg);
+            transition: transform 0.5s ease-in-out;
+        }
+    
+        #controlls {
+            clear: both;
+        }
+    
+        span.fore[data-fore-color="Rainbow"] {
+            background: linear-gradient(red, green, blue);
+        }
+    </style>
+</head>
+<body>
+<div id="ledMapList">
+    <div id="ledMap1" class="ledMap">
+        <div class="ledLine">
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+        </div>
+        <div class="ledLine">
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+        </div>
+        <div class="ledLine">
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+        </div>
+        <div class="ledLine">
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+        </div>
+        <div class="ledLine">
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+        </div>
+        <div class="ledLine">
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+        </div>
+        <div class="ledLine">
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+            <span class="ledBox"></span>
+        </div>
+    </div>
+</div>
+<div id="controlls">
+    <input type="checkbox" id="rotateEditCheck" />
+    <label for="rotateEditCheck">90度回転編集</label>
+
+    <fieldset>
+    <legend>色設定</legend>
+    <label for="foreColorSelect">前景色：</label>
+    <select id="foreColorSelect">
+        <option value="White">White</option>
+        <option value="Black">Black（消灯）</option>
+        <option value="Red">Red</option>
+        <option value="Green">Green</option>
+        <option value="Blue">Blue</option>
+        <option value="Yellow">Yellow</option>
+        <option value="Orange">Orange</option>
+        <option value="Pink">Pink</option>
+        <option value="Purple">Purple</option>
+        <option value="Gray">Gray</option>
+        <option value="Rainbow">虹色（色変化）</option>
+    </select>
+    <label for="backColorSelect">背景色：</label>
+    <select id="backColorSelect">
+        <option value="Black">Black（消灯）</option>
+        <option value="White">White</option>
+        <option value="Red">Red</option>
+        <option value="Green">Green</option>
+        <option value="Blue">Blue</option>
+        <option value="Yellow">Yellow</option>
+        <option value="Orange">Orange</option>
+        <option value="Pink">Pink</option>
+        <option value="Purple">Purple</option>
+        <option value="Gray">Gray</option>
+        <option value="Rainbow">虹色（色変化）</option>
+    </select>
+    </fieldset>
+
+    <fieldset>
+        <legend>切り替え点灯</legend>
+        <label for="numOfMap">枚数</label>
+        <input type="number" id="numOfMap" min="1" max="20" value="1" />
+
+        <label for="changeInterval">切り替え間隔(ms)</label>
+        <input type="number" id="changeInterval" min="50" max="50000" step="50" value="1000" />
+    </fieldset>
+    <fieldset>
+        <legend>回転点灯</legend>
+        <input type="radio" id="noLightLotate" name="lightLotate" value="noLightLotate" checked />
+        <label for="noLightLotate">なし</label>
+        <input type="radio" id="clockwiseLightLotate" name="lightLotate" value="clockwiseLightLotate" />
+        <label for="clockwiseLightLotate">時計回り</label>
+        <input type="radio" id="counterClockwiseLightLotate" name="lightLotate" value="counterClockwiseLightLotate"/>
+        <label for="counterClockwiseLightLotate">反時計回り</label>
+
+        <label for="rotateInterval">回転間隔(ms)</label>
+        <input type="number" id="rotateInterval" min="50" max="5000" step="50" value="500" />
+    </fieldset>
+    <hr>
+    <button id="clearMapButton">クリア</button>
+    <hr>
+    <button id="generateFileButton">設定ファイル生成</button>
+    <hr>
+    <fieldset>
+        <legend>設定ファイル読み込み</legend>
+        <input type="file" id="readDataFile" />
+    </fieldset>
+</div>
+
+
+<script>
+    // マップ部のLEDをクリックした場合の処理
+    const clickLedBox = (event) => {
+        let target = event.target;
+        if(target.classList.contains("fore")) {
+            // 前景色設定の場合は背景色設定に変更
+            target.classList.remove("fore");
+            target.style.backgroundColor = null;
+            target.dataset.foreColor = null;
+        } else {
+            // 背景色設定の場合は前景色設定に変更
+            target.classList.add("fore");
+            const foreColor = document.querySelector("#foreColorSelect").value;
+            if (foreColor !== "Rainbow") {
+                target.style.backgroundColor = foreColor;
+            }
+            target.dataset.foreColor = foreColor;
+        }
+    }
+
+    // 初期表示時にマップ部LEDクリック時のイベントを設定
+    document.querySelectorAll("span.ledBox").forEach(elem => {
+        elem.addEventListener("click", clickLedBox);
+    });
+
+    // 切り替え点灯枚数の変更時のイベント
+    document.querySelector("#numOfMap").addEventListener("change", event => {
+        const numOfMap = event.target.value;
+        const mapListElem = document.querySelector("#ledMapList");
+        const numCurrent = document.querySelectorAll("#ledMapList div.ledMap").length;
+        if (numCurrent < numOfMap) {
+            // 現在のマップ部の枚数が新設定値より少ないので、マップ部に追加する
+            const originalElem = document.querySelector("#ledMapList div.ledMap:last-child");
+            // 追加対象枚数分繰り返し
+            for (let i = 0; i < (numOfMap - numCurrent); i++) {
+                // 最後の要素から一枚分の要素をコピーして追加
+                const clonedElem = originalElem.cloneNode(true);
+                clonedElem.id = "ledMap" + (numCurrent + i + 1);
+                mapListElem.appendChild(clonedElem);
+
+                // 追加部分にLEDクリック時のイベントを設定
+                clonedElem.querySelectorAll("span.ledBox").forEach(elem => {
+                    elem.addEventListener("click", clickLedBox);
+                });
+            }
+        } else if (numCurrent > numOfMap) {
+            // 現在のマップ部の枚数が新設定値より多いので、マップ部から削除する
+            if (!confirm("枚数を減らすと右側から削除されます。よろしいですか？")) {
+                return;
+            }
+            // 最後の要素から順に削除対象枚数を削除する
+            for (let i = 0; i < (numCurrent - numOfMap); i++) {
+                const lastElem = document.querySelector("#ledMapList div.ledMap:last-child");
+                lastElem.parentNode.removeChild(lastElem);
+            }   
+        }
+    });
+
+    // 90度回転編集チェックボックス変更時のイベント
+    document.querySelector("#rotateEditCheck").addEventListener("change", event => {
+        const ledMaps = document.querySelectorAll("div.ledMap");
+        if (event.target.checked) {
+            // マップ部に回転のクラスを設定
+            ledMaps.forEach(e => {e.classList.add("rotated");});
+        } else {
+            // 回転のクラスを削除し、回転アニメーションを設定
+            ledMaps.forEach(e => {
+                e.classList.remove("rotated");
+                setTimeout(function() {
+                    e.style.transition = "transform 0.5s ease-in-out";
+                }, 0);
+            });
+        }
+    });
+
+    // クリアボタン押下時のイベント
+    document.querySelector("#clearMapButton").addEventListener("click", () => {
+        if (confirm("本当にクリアしますか？")) {
+            document.querySelectorAll("span.ledBox").forEach((e) => {
+                // 前景色設定をクリア
+                e.classList.remove("fore");
+                e.style.backgroundColor = null;
+            });
+        }
+    });
+
+    // ファイル生成ボタン押下時のイベント
+    document.querySelector("#generateFileButton").addEventListener("click", () => {
+        const backColor = document.querySelector("#backColorSelect").value;
+        const ledMaps = document.querySelectorAll("div.ledMap");
+
+        // 設定データの格納
+        let configData = {};
+        configData.backColor = backColor;
+        configData.numOfMap = document.querySelector("#numOfMap").value;
+        configData.changeInterval = document.querySelector("#changeInterval").value;
+        configData.lightLotate = document.querySelector("input[name='lightLotate']:checked").value;
+        configData.rotateInterval = document.querySelector("#rotateInterval").value;
+        configData.dataArray = [];
+        
+        // マップ部の設定値生成
+        ledMaps.forEach(e => {
+            const ledBoxList = e.querySelectorAll("span.ledBox");
+            const colorArray = Array.from(ledBoxList).map(e => {
+                if (e.classList.contains("fore")) {
+                    return e.dataset.foreColor;
+                } else {
+                    return backColor;
+                }
+            });
+            configData.dataArray.push(colorArray);
+        });
+
+        // ダウンロード処理でファイルを作成
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(configData)));
+        element.setAttribute('download', "settingData.json");
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    });
+
+    // 設定ファイル読み込みのファイル選択時のイベント
+    document.querySelector("#readDataFile").addEventListener('change', event => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = e => {
+            // ファイルロード完了時の処理
+            try {
+                // JSONをアンシリアライズして入力項目に設定
+                const settingData = JSON.parse(e.target.result);
+                document.querySelector("#backColorSelect").value = settingData.backColor;
+                document.querySelector("#numOfMap").value = settingData.numOfMap;
+                document.querySelector("#changeInterval").value = settingData.changeInterval;
+                document.querySelector("#rotateInterval").value = settingData.rotateInterval;
+                document.querySelector("#" + settingData.lightLotate).checked = true;
+
+                // LEDマップ部の復元
+                const numCurrent = document.querySelectorAll("#ledMapList div.ledMap").length;
+                // LEDマップ部の枚数を一枚に減らす
+                for (let i = 0; i < (numCurrent - 1); i++) {
+                    const lastElem = document.querySelector("#ledMapList div.ledMap:last-child");
+                    lastElem.parentNode.removeChild(lastElem);
+                }   
+
+                // LEDマップ部の枚数を指定枚数に増やす
+                const mapListElem = document.querySelector("#ledMapList");
+                const originalElem = document.querySelector("#ledMapList div.ledMap:last-child");
+                // 追加対象枚数分繰り返し
+                for (let i = 0; i < (settingData.numOfMap - 1); i++) {
+                    // 要素をコピーして追加
+                    const clonedElem = originalElem.cloneNode(true);
+                    clonedElem.id = "ledMap" + (i + 1 + 1);
+                    mapListElem.appendChild(clonedElem);
+
+                    // 追加部分にLEDクリック時のイベントを設定
+                    clonedElem.querySelectorAll("span.ledBox").forEach(elem => {
+                        elem.addEventListener("click", clickLedBox);
+                    });
+                }
+
+                // LEDマップ部の色指定の復元
+                const ledMaps = document.querySelectorAll("div.ledMap");
+                for (let i = 0; i < settingData.numOfMap; i++) {
+                    const colorArray = settingData.dataArray[i];
+                    const ledBoxList = ledMaps[i].querySelectorAll("span.ledBox");
+                    for (let j = 0; j < colorArray.length; j++) {
+                        const target = ledBoxList[j];
+                        if (colorArray[j] === settingData.backColor) {
+                            target.classList.remove("fore");
+                            target.style.backgroundColor = null;
+                            target.dataset.foreColor = null; 
+                        } else {
+                            target.classList.add("fore");
+                            const foreColor = colorArray[j];
+                            if (foreColor !== "Rainbow") {
+                                target.style.backgroundColor = foreColor;
+                            }
+                            target.dataset.foreColor = foreColor;
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("ファイルフォーマットが不正です。");
+            }
+            // ファイル指定をクリア
+            document.getElementById('readDataFile').value = null;
+        };
+
+        reader.readAsText(file);
+    });
+</script>
+</body>
+</html>
